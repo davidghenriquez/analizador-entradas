@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Analizador de Entradas</title>
   <meta name="description" content="Aprende patrones en datos de Forex e índices, estima la probabilidad de cada entrada y la valida con backtesting walk-forward.">
-  <link rel="stylesheet" href="styles.css?v=5">
+  <link rel="stylesheet" href="styles.css?v=7">
 </head>
 <body>
 <header>
@@ -124,6 +124,28 @@
     <div class="table-wrap"><table id="tradesTable"></table></div>
   </section>
 
+  <section class="card hidden" id="replay">
+    <h2>Repaso vela a vela</h2>
+    <p class="hint">Recorre el periodo de prueba como si lo vivieras en directo: el gráfico solo enseña hasta la vela actual y el modelo, entrenado solo con datos anteriores, decide si entra con el umbral elegido arriba. El resultado de cada entrada se descubre al avanzar.</p>
+    <div class="replay-controls">
+      <button id="replayStart" class="secondary">Inicio</button>
+      <button id="replayPrev" class="secondary">&lsaquo; Vela</button>
+      <button id="replayNext" class="secondary">Vela &rsaquo;</button>
+      <button id="replayNextEntry">Siguiente entrada &raquo;</button>
+      <button id="replayResult" class="secondary">Ver resultado</button>
+      <button id="replayPlay" class="secondary">Reproducir</button>
+      <label class="check">Velocidad
+        <select id="replaySpeed">
+          <option value="600">Lenta</option>
+          <option value="250" selected>Normal</option>
+          <option value="60">Rápida</option>
+        </select>
+      </label>
+    </div>
+    <div id="replayChart"></div>
+    <div id="replayPanel"></div>
+  </section>
+
   <section class="card hidden" id="signal">
     <h2>4. Última vela</h2>
     <div id="signalBody"></div>
@@ -135,12 +157,13 @@
 </footer>
 
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
-<script src="js/indicators.js?v=5"></script>
-<script src="js/model.js?v=5"></script>
-<script src="js/backtest.js?v=5"></script>
-<script src="js/data.js?v=5"></script>
-<script src="js/signals.js?v=5"></script>
-<script src="js/app.js?v=5"></script>
-<script src="js/live.js?v=5"></script>
+<script src="js/indicators.js?v=7"></script>
+<script src="js/model.js?v=7"></script>
+<script src="js/backtest.js?v=7"></script>
+<script src="js/data.js?v=7"></script>
+<script src="js/signals.js?v=7"></script>
+<script src="js/app.js?v=7"></script>
+<script src="js/live.js?v=7"></script>
+<script src="js/replay.js?v=7"></script>
 </body>
 </html>

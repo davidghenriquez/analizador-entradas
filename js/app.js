@@ -33,6 +33,7 @@
     result = null;
     $('results').classList.add('hidden');
     $('signal').classList.add('hidden');
+    $('replay').classList.add('hidden');
     $('runBtn').disabled = false;
     info('dataInfo', `${label}: ${bars.length} velas, del ${fmtDate(bars[0].t)} al ${fmtDate(bars[bars.length - 1].t)}.`);
   }
@@ -167,6 +168,7 @@
     drawEquity(m.equity);
     renderThresholdTable(thr, base);
     renderTrades(trades);
+    Replay.update(result, bars, thr, trades);
   }
 
   function renderThresholdTable(current, base) {
