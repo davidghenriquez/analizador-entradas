@@ -119,3 +119,5 @@ const Model = (() => {
 
   return { buildFeatures, simulate, train, predict, FEATURE_NAMES };
 })();
+
+globalThis.Model = Model;

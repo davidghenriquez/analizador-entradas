@@ -90,3 +90,5 @@ const Ind = (() => {
 
   return { sma, ema, atr, rsi, rollingMax, rollingMin };
 })();
+
+globalThis.Ind = Ind;

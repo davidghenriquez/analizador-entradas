@@ -1,4 +1,4 @@
-name: Actualizar datos de mercado
+name: Actualizar datos y modelos
 
 on:
   schedule:
@@ -17,6 +17,7 @@ jobs:
         with:
           node-version: 22
       - run: node scripts/actualizar-datos.mjs
+      - run: node scripts/entrenar-modelos.mjs
       - name: Guardar cambios
         run: |
           git config user.name "github-actions[bot]"

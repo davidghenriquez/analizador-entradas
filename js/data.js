@@ -93,3 +93,5 @@ const Data = (() => {
 
   return { parseCSV, fetchTwelveData, synthetic };
 })();
+
+globalThis.Data = Data;

@@ -1,0 +1,25 @@
+name = "analizador-entradas"
+main = "index.js"
+compatibility_date = "2026-09-01"
+
+# Revisión al cerrar cada vela: 1 h (minuto 2), 4 h (minuto 4, solo horas múltiplo de 4) y diario (minuto 6, comprueba cada hora)
+[triggers]
+crons = ["2 * * * *", "4 * * * *", "6 * * * *"]
+
+[[kv_namespaces]]
+binding = "ALERTAS"
+id = "247119deb4d848789623c6d8a0912405"
+
+# Solo puede enviar a direcciones verificadas en Email Routing de Cloudflare
+[[send_email]]
+name = "CORREO"
+destination_address = "davidg.henriquez@gmail.com"
+
+[vars]
+REMITENTE = "alertas@onmyowntrip.com"
+DESTINO = "davidg.henriquez@gmail.com"
+MODELOS_URL = "https://davidghenriquez.github.io/analizador-entradas/data/modelos/"
+WEB_URL = "https://davidghenriquez.github.io/analizador-entradas/"
+
+[observability]
+enabled = true

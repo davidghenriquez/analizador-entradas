@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Analizador de Entradas</title>
   <meta name="description" content="Aprende patrones en datos de Forex e índices, estima la probabilidad de cada entrada y la valida con backtesting walk-forward.">
-  <link rel="stylesheet" href="styles.css?v=3">
+  <link rel="stylesheet" href="styles.css?v=4">
 </head>
 <body>
 <header>
@@ -69,6 +69,17 @@
     <p id="dataInfo" class="info"></p>
   </section>
 
+  <section class="card" id="live">
+    <h2>Señal en vivo</h2>
+    <p class="hint">Para el mercado y la temporalidad elegidos en la pestaña Mercado: probabilidad de entrada en la última vela cerrada y la salida (stop loss y take profit) recomendada. Se actualiza sola cada vez que cierra una vela.</p>
+    <div class="live-actions">
+      <button id="liveBtn" disabled>Ver señal en vivo</button>
+      <label class="check"><input type="checkbox" id="liveNotify"> Avisarme con notificación y sonido</label>
+    </div>
+    <p id="liveStatus" class="info"></p>
+    <div id="liveBody"></div>
+  </section>
+
   <section class="card">
     <h2>2. Estrategia</h2>
     <p class="hint">Para cada vela el modelo estima la probabilidad de que una entrada larga y una corta terminen en ganancia. Entra en la apertura de la vela siguiente si la probabilidad supera el umbral.</p>
@@ -121,10 +132,12 @@
   <p>Herramienta educativa de análisis. No es asesoramiento financiero ni una recomendación de inversión. Los resultados pasados no garantizan resultados futuros y el trading con apalancamiento puede hacerte perder más de lo invertido.</p>
 </footer>
 
-<script src="js/indicators.js?v=3"></script>
-<script src="js/model.js?v=3"></script>
-<script src="js/backtest.js?v=3"></script>
-<script src="js/data.js?v=3"></script>
-<script src="js/app.js?v=3"></script>
+<script src="js/indicators.js?v=4"></script>
+<script src="js/model.js?v=4"></script>
+<script src="js/backtest.js?v=4"></script>
+<script src="js/data.js?v=4"></script>
+<script src="js/signals.js?v=4"></script>
+<script src="js/app.js?v=4"></script>
+<script src="js/live.js?v=4"></script>
 </body>
 </html>

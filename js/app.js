@@ -62,15 +62,16 @@
     } catch (err) { info('dataInfo', 'Error: ' + err.message, true); }
   });
 
+  const groups = {};
+  for (const s of Signals.MARKETS) (groups[s.group] ||= []).push(s);
+  $('mkSymbol').innerHTML = Object.entries(groups).map(([g, list]) =>
+    `<optgroup label="${g}">${list.map(s => `<option value="${s.id}">${s.name}</option>`).join('')}</optgroup>`).join('');
+
   let marketIndex = null;
   fetch('data/index.json', { cache: 'no-cache' })
     .then(r => { if (!r.ok) throw new Error(); return r.json(); })
     .then(idx => {
       marketIndex = idx;
-      const groups = {};
-      for (const s of idx.symbols) (groups[s.group] ||= []).push(s);
-      $('mkSymbol').innerHTML = Object.entries(groups).map(([g, list]) =>
-        `<optgroup label="${g}">${list.map(s => `<option value="${s.id}">${s.name}</option>`).join('')}</optgroup>`).join('');
       $('marketHint').textContent = `Velas de ${idx.source}, actualizadas solas cada día laborable. Última actualización: ${fmtDate(Date.parse(idx.updated))} UTC.`;
       $('mkLoad').disabled = false;
     })

@@ -50,16 +50,17 @@ const Backtest = (() => {
 
     // Modelo final con todos los datos resueltos, para la señal de la última vela
     const all = trainingSet(prep, n);
-    let current = null, weights = null;
+    let current = null, weights = null, models = null;
     if (all.X.length >= MIN_TRAIN) {
       const mL = Model.train(all.X, all.yL), mS = Model.train(all.X, all.yS);
       const last = n - 1;
       const x = prep.feats.X[last];
       if (x) current = { idx: last, pL: Model.predict(mL, x), pS: Model.predict(mS, x), atr: prep.feats.atr[last] };
       weights = { long: mL.w, short: mS.w };
+      models = { long: mL, short: mS };
     }
 
-    return { prep, probL, probS, startTest, skipped, current, weights, params: p, n };
+    return { prep, probL, probS, startTest, skipped, current, weights, models, params: p, n };
   }
 
   // Selecciona operaciones sin solaparse: solo una abierta a la vez.
@@ -126,3 +127,5 @@ const Backtest = (() => {
 
   return { run, selectTrades, metrics, baseline, calibration };
 })();
+
+globalThis.Backtest = Backtest;
