@@ -95,8 +95,8 @@
       <td>${x.dir > 0 ? 'Compra' : 'Venta'}</td><td>${x.tp} ATR</td>
       <td class="${x.p >= x.minProb ? 'good' : ''}">${pct(x.p)}</td><td>${pct(x.minProb)}</td><td>${signed(x.ev)}</td>
       <td>${x.stop.toFixed(d)}</td><td>${x.target.toFixed(d)}</td>
-      <td>${x.stats.n} op · ${pct(x.stats.winRate || 0)} · ${signed(x.stats.avgR || 0)} R</td>
-      <td>${x.edge ? '<span class="badge good">Sí</span>' : '<span class="badge">No</span>'}</td></tr>`).join('');
+      <td>${x.stats.n} op · ${pct(x.stats.winRate || 0)} (sin filtro ${pct(x.stats.baseWinRate || 0)}) · ${signed(x.stats.avgR || 0)} R · AUC ${(x.stats.auc || 0).toFixed(2)}</td>
+      <td>${x.edge ? '<span class="badge good">Sí</span>' : `<span class="badge" title="${(x.stats.fails || []).join('; ')}">No</span>`}</td></tr>`).join('');
 
     $('liveBody').innerHTML = `<p class="hint">${market.name} ${interval} · última vela cerrada ${fmt(s.t)} UTC · cierre ${s.close.toFixed(d)} · ATR ${s.atr.toFixed(d)}</p>
       ${reco}
@@ -107,6 +107,8 @@
         <tr><th>Dirección</th><th>Take profit</th><th>Probabilidad</th><th>Mínima</th><th>R esperado</th><th>Stop loss</th><th>Objetivo</th><th>Backtest</th><th>Ventaja</th></tr>
         ${rows}
       </table></div>
+      <p class="hint">"Ventaja" exige, en datos no vistos: al menos 50 operaciones, +0,05 R de media, profit factor 1,15 o más, acertar 2 puntos más que entrando sin filtro, AUC de 0,52 o más (cuando el modelo da más probabilidad, acierta más) y resultado positivo en al menos 3 de 4 tramos del periodo de prueba. Pasa el ratón por "No" para ver qué falla.</p>`
+      + `
       <p class="hint">Modelos entrenados el ${fmt(Date.parse(set.updated))} UTC. Cálculo estadístico con datos pasados, no es una recomendación de inversión.</p>`;
 
     $('liveTable').querySelectorAll('tr[data-k]').forEach(tr =>

@@ -117,10 +117,11 @@
   $('mkInterval').addEventListener('change', () => { if (!userPicked) pickBest(); labelOptions(); });
 
   // Aviso cuando el mercado cargado no tiene ventaja o el backtest no sale positivo
-  function noEdgeWarning(m) {
+  function noEdgeWarning(trades) {
     const loaded = currentMarket && edge[currentMarket.iv] ? edge[currentMarket.iv][currentMarket.id] : undefined;
     if (loaded === null) return 'Según el entrenamiento diario, el modelo no encuentra un patrón útil en este mercado y temporalidad: ninguna salida tiene ventaja en datos no vistos. No operes este mercado con él.';
-    if (m.n < 30 || !(m.avgR > 0) || !(m.pf >= 1.1)) return 'Con estos datos y parámetros el modelo no encuentra un patrón útil: en datos que no había visto no gana dinero (o hay muy pocas operaciones para saberlo). No operes este mercado con estos ajustes.';
+    const chk = Backtest.edgeCheck(result, trades);
+    if (!chk.edge) return `Con estos datos y parámetros el modelo no tiene ventaja demostrada: ${chk.fails.join('; ')}. No operes este mercado con estos ajustes.`;
     return '';
   }
   let currentMarket = null;
@@ -226,7 +227,7 @@
     else if (m.winRate > base.winRate) verdict = 'El modelo mejora algo el acierto frente a entrar sin filtro, pero no lo suficiente para cubrir las pérdidas y los costes.';
     else verdict = 'El modelo no mejora a entrar sin filtro: con estos datos y parámetros no ha encontrado un patrón útil.';
     $('verdict').textContent = `1 R = lo que pierdes si salta el stop. ${verdict}`;
-    const warn = noEdgeWarning(m);
+    const warn = noEdgeWarning(trades);
     for (const id of ['edgeWarn', 'replayWarn']) {
       $(id).textContent = warn;
       $(id).classList.toggle('hidden', !warn);

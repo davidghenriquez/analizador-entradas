@@ -125,7 +125,55 @@ const Backtest = (() => {
     return buckets.filter(b => b.n > 0);
   }
 
-  return { run, selectTrades, metrics, baseline, calibration };
+  // AUC: probabilidad de que una entrada ganadora tenga más probabilidad predicha que una perdedora.
+  // 0,5 = el modelo no distingue nada; por debajo de 0,5 ordena al revés.
+  function auc(res) {
+    const pts = [];
+    for (let i = res.startTest; i < res.n; i++) {
+      if (!Number.isFinite(res.probL[i])) continue;
+      if (res.prep.outL[i]) pts.push([res.probL[i], res.prep.outL[i].r > 0]);
+      if (res.prep.outS[i]) pts.push([res.probS[i], res.prep.outS[i].r > 0]);
+    }
+    pts.sort((a, b) => a[0] - b[0]);
+    let rankSum = 0, pos = 0;
+    for (let k = 0; k < pts.length;) {
+      let j = k;
+      while (j < pts.length && pts[j][0] === pts[k][0]) j++;
+      const rank = (k + j + 1) / 2;   // rango medio para empates
+      for (let q = k; q < j; q++) if (pts[q][1]) { rankSum += rank; pos++; }
+      k = j;
+    }
+    const neg = pts.length - pos;
+    return pos && neg ? (rankSum - pos * (pos + 1) / 2) / (pos * neg) : NaN;
+  }
+
+  // Resultado por tramos consecutivos del periodo de prueba, para ver si la ventaja es estable
+  function blocks(res, trades, count = 4) {
+    const size = (res.n - res.startTest) / count;
+    const out = Array.from({ length: count }, () => ({ n: 0, totalR: 0 }));
+    for (const t of trades) {
+      const b = Math.min(count - 1, Math.floor((t.entryIdx - res.startTest) / size));
+      out[b].n++; out[b].totalR += t.r;
+    }
+    return out;
+  }
+
+  // Criterio de ventaja: gana dinero, mejora a entrar sin filtro, sus probabilidades ordenan bien
+  // y el resultado es positivo en la mayoría de tramos. Devuelve también los motivos si no la tiene.
+  function edgeCheck(res, trades) {
+    const m = metrics(trades), base = baseline(res), a = auc(res), bl = blocks(res, trades);
+    const positive = bl.filter(b => b.totalR > 0).length;
+    const lift = m.winRate - base.winRate;
+    const fails = [];
+    if (!(m.n >= 50)) fails.push(`pocas operaciones (${m.n})`);
+    if (!(m.avgR >= 0.05 && m.pf >= 1.15)) fails.push('no gana lo suficiente');
+    if (!(lift >= 0.02)) fails.push('no mejora a entrar sin filtro');
+    if (!(a >= 0.52)) fails.push('sus probabilidades no ordenan bien');
+    if (positive < 3) fails.push(`solo ${positive} de 4 tramos positivos`);
+    return { edge: fails.length === 0, fails, m, base, auc: a, lift, blocks: bl, positiveBlocks: positive };
+  }
+
+  return { run, selectTrades, metrics, baseline, calibration, auc, blocks, edgeCheck };
 })();
 
 globalThis.Backtest = Backtest;
