@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Analizador de Entradas</title>
+  <meta name="description" content="Aprende patrones en datos de Forex e índices, estima la probabilidad de cada entrada y la valida con backtesting walk-forward.">
+  <link rel="stylesheet" href="styles.css?v=1">
+</head>
+<body>
+<header>
+  <h1>Analizador de Entradas</h1>
+  <p class="sub">Aprende patrones de precio, estima la probabilidad de que una entrada llegue al objetivo y lo comprueba con backtesting sobre datos que el modelo no ha visto.</p>
+</header>
+
+<main>
+  <section class="card">
+    <h2>1. Datos</h2>
+    <div class="tabs" role="tablist">
+      <button class="tab active" data-tab="csv">Archivo CSV</button>
+      <button class="tab" data-tab="api">Twelve Data</button>
+      <button class="tab" data-tab="demo">Ejemplo</button>
+    </div>
+
+    <div class="pane" data-pane="csv">
+      <p class="hint">Exporta las velas desde MetaTrader (Centro de históricos, Exportar), TradingView (Exportar datos del gráfico) o cualquier CSV con columnas fecha, apertura, máximo, mínimo y cierre.</p>
+      <input type="file" id="csvFile" accept=".csv,.txt">
+    </div>
+
+    <div class="pane hidden" data-pane="api">
+      <p class="hint">Necesitas una clave gratuita de <a href="https://twelvedata.com/pricing" target="_blank" rel="noopener">twelvedata.com</a>. Se guarda solo en este navegador. Máximo 5000 velas por descarga.</p>
+      <div class="grid">
+        <label>Símbolo <input id="apiSymbol" value="EUR/USD" placeholder="EUR/USD"></label>
+        <label>Temporalidad
+          <select id="apiInterval">
+            <option value="15min">15 min</option>
+            <option value="30min">30 min</option>
+            <option value="1h" selected>1 hora</option>
+            <option value="4h">4 horas</option>
+            <option value="1day">Diario</option>
+          </select>
+        </label>
+        <label>Clave API <input id="apiKey" type="password" autocomplete="off"></label>
+      </div>
+      <button id="apiLoad" class="secondary">Descargar velas</button>
+    </div>
+
+    <div class="pane hidden" data-pane="demo">
+      <p class="hint">Serie de precios inventada (4000 velas de 1 hora) para probar la herramienta. Sus resultados no dicen nada del mercado real.</p>
+      <button id="demoLoad" class="secondary">Cargar ejemplo</button>
+    </div>
+
+    <p id="dataInfo" class="info"></p>
+  </section>
+
+  <section class="card">
+    <h2>2. Estrategia</h2>
+    <p class="hint">Para cada vela el modelo estima la probabilidad de que una entrada larga y una corta terminen en ganancia. Entra en la apertura de la vela siguiente si la probabilidad supera el umbral.</p>
+    <div class="grid">
+      <label>Stop loss (× ATR) <input id="pSl" type="number" step="0.1" min="0.2" value="1"></label>
+      <label>Take profit (× ATR) <input id="pTp" type="number" step="0.1" min="0.2" value="1.5"></label>
+      <label>Velas máximas abierta <input id="pMax" type="number" step="1" min="2" value="24"></label>
+      <label>Coste por operación (precio) <input id="pCost" type="number" step="0.00001" min="0" value="0.0001"></label>
+      <label>Entrenamiento inicial (%) <input id="pTrain" type="number" step="5" min="20" max="90" value="50"></label>
+      <label>Bloques walk-forward <input id="pFolds" type="number" step="1" min="1" max="20" value="5"></label>
+    </div>
+    <button id="runBtn" disabled>Entrenar y hacer backtest</button>
+    <p id="runStatus" class="info"></p>
+  </section>
+
+  <section class="card hidden" id="results">
+    <h2>3. Resultados del backtest</h2>
+    <label class="thr">Umbral de probabilidad: <strong id="thrVal">55%</strong>
+      <input id="thr" type="range" min="0.40" max="0.80" step="0.01" value="0.55">
+    </label>
+
+    <div class="stats" id="stats"></div>
+    <p class="hint" id="verdict"></p>
+
+    <h3>Curva de resultados (en R)</h3>
+    <canvas id="equity" height="220"></canvas>
+
+    <h3>% de aciertos según el umbral</h3>
+    <div class="table-wrap"><table id="thrTable"></table></div>
+
+    <h3>¿La probabilidad es fiable? (calibración)</h3>
+    <p class="hint">Si el modelo está bien calibrado, cuando dice 60% debería acertar cerca del 60% de las veces.</p>
+    <div class="table-wrap"><table id="calTable"></table></div>
+
+    <h3>Patrones que más pesan</h3>
+    <div class="table-wrap"><table id="weightsTable"></table></div>
+
+    <h3>Últimas operaciones</h3>
+    <div class="table-wrap"><table id="tradesTable"></table></div>
+  </section>
+
+  <section class="card hidden" id="signal">
+    <h2>4. Última vela</h2>
+    <div id="signalBody"></div>
+  </section>
+</main>
+
+<footer>
+  <p>Herramienta educativa de análisis. No es asesoramiento financiero ni una recomendación de inversión. Los resultados pasados no garantizan resultados futuros y el trading con apalancamiento puede hacerte perder más de lo invertido.</p>
+</footer>
+
+<script src="js/indicators.js?v=1"></script>
+<script src="js/model.js?v=1"></script>
+<script src="js/backtest.js?v=1"></script>
+<script src="js/data.js?v=1"></script>
+<script src="js/app.js?v=1"></script>
+</body>
+</html>
