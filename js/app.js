@@ -31,6 +31,7 @@
     if (newBars.length < 500) throw new Error(`Solo hay ${newBars.length} velas. Hacen falta al menos 500, mejor más de 2000.`);
     bars = newBars;
     result = null;
+    currentMarket = null;
     $('results').classList.add('hidden');
     $('signal').classList.add('hidden');
     $('replay').classList.add('hidden');
@@ -68,6 +69,62 @@
   $('mkSymbol').innerHTML = Object.entries(groups).map(([g, list]) =>
     `<optgroup label="${g}">${list.map(s => `<option value="${s.id}">${s.name}</option>`).join('')}</optgroup>`).join('');
 
+  // ---------- Ventaja según el entrenamiento diario ----------
+  // edge[interval][id] = mejor salida con ventaja en el backtest walk-forward, o null si no tiene ninguna
+  const edge = {};
+  let userPicked = false;
+
+  function bestEdge(market) {
+    let best = null;
+    for (const [tp, e] of Object.entries(market.exits)) {
+      if (e.stats.edge && (!best || e.stats.avgR > best.avgR)) best = { tp: +tp, ...e.stats };
+    }
+    return best;
+  }
+
+  function labelOptions() {
+    const iv = $('mkInterval').value, info = edge[iv];
+    for (const opt of $('mkSymbol').options) {
+      const name = Signals.MARKETS.find(m => m.id === opt.value).name;
+      opt.textContent = !info ? name : info[opt.value] ? `${name} · con ventaja` : `${name} · sin ventaja`;
+    }
+    const withEdge = info ? Object.values(info).filter(Boolean).length : 0;
+    $('edgeHint').textContent = info
+      ? `En ${$('mkInterval').selectedOptions[0].text.toLowerCase()}, ${withEdge} de ${Signals.MARKETS.length} mercados tienen ventaja según el entrenamiento diario (backtest con datos no vistos). En los marcados "sin ventaja" el modelo no ha encontrado un patrón útil.`
+      : '';
+  }
+
+  // Al abrir, el mercado con mejor resultado en el backtest de la temporalidad elegida
+  function pickBest() {
+    const info = edge[$('mkInterval').value];
+    if (!info) return;
+    const ranked = Object.entries(info).filter(([, e]) => e).sort((a, b) => b[1].avgR - a[1].avgR);
+    if (ranked.length) $('mkSymbol').value = ranked[0][0];
+  }
+
+  Promise.all(Signals.INTERVALS.map(iv => fetch(`data/modelos/${iv}.json`, { cache: 'no-cache' })
+    .then(r => r.ok ? r.json() : null).catch(() => null)))
+    .then(sets => {
+      sets.forEach((set, k) => {
+        if (!set) return;
+        edge[Signals.INTERVALS[k]] = Object.fromEntries(Object.entries(set.markets).map(([id, m]) => [id, bestEdge(m)]));
+      });
+      if (!userPicked) { $('mkInterval').value = '1d'; pickBest(); }
+      labelOptions();
+    });
+
+  $('mkSymbol').addEventListener('change', () => { userPicked = true; });
+  $('mkInterval').addEventListener('change', () => { if (!userPicked) pickBest(); labelOptions(); });
+
+  // Aviso cuando el mercado cargado no tiene ventaja o el backtest no sale positivo
+  function noEdgeWarning(m) {
+    const loaded = currentMarket && edge[currentMarket.iv] ? edge[currentMarket.iv][currentMarket.id] : undefined;
+    if (loaded === null) return 'Según el entrenamiento diario, el modelo no encuentra un patrón útil en este mercado y temporalidad: ninguna salida tiene ventaja en datos no vistos. No operes este mercado con él.';
+    if (m.n < 30 || !(m.avgR > 0) || !(m.pf >= 1.1)) return 'Con estos datos y parámetros el modelo no encuentra un patrón útil: en datos que no había visto no gana dinero (o hay muy pocas operaciones para saberlo). No operes este mercado con estos ajustes.';
+    return '';
+  }
+  let currentMarket = null;
+
   let marketIndex = null;
   fetch('data/index.json', { cache: 'no-cache' })
     .then(r => { if (!r.ok) throw new Error(); return r.json(); })
@@ -86,6 +143,11 @@
       const res = await fetch(`data/${s.id}_${iv}.csv?u=${encodeURIComponent(marketIndex.updated)}`);
       if (!res.ok) throw new Error(`No hay datos de ${s.name} en ${iv}.`);
       setData(Data.parseCSV(await res.text()), `${s.name} ${$('mkInterval').selectedOptions[0].text}`);
+      // Coste y duración máxima propios de este mercado y temporalidad
+      const mk = Signals.MARKETS.find(m => m.id === s.id);
+      $('pCost').value = mk.cost;
+      $('pMax').value = Signals.MAX_BARS[iv];
+      currentMarket = { id: s.id, iv };
     } catch (err) { info('dataInfo', err.message, true); }
   });
 
@@ -164,6 +226,11 @@
     else if (m.winRate > base.winRate) verdict = 'El modelo mejora algo el acierto frente a entrar sin filtro, pero no lo suficiente para cubrir las pérdidas y los costes.';
     else verdict = 'El modelo no mejora a entrar sin filtro: con estos datos y parámetros no ha encontrado un patrón útil.';
     $('verdict').textContent = `1 R = lo que pierdes si salta el stop. ${verdict}`;
+    const warn = noEdgeWarning(m);
+    for (const id of ['edgeWarn', 'replayWarn']) {
+      $(id).textContent = warn;
+      $(id).classList.toggle('hidden', !warn);
+    }
 
     drawEquity(m.equity);
     renderThresholdTable(thr, base);

@@ -138,3 +138,9 @@ footer { color: var(--muted); font-size: 0.82rem; padding-bottom: 32px; }
 .replay-controls button { padding: 7px 12px; }
 #replayChart { height: 380px; margin-bottom: 12px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
 @media (max-width: 520px) { #replayChart { height: 300px; } }
+
+.warn {
+  border: 1px solid var(--bad); color: var(--bad); border-radius: 8px;
+  padding: 10px 12px; margin: 0 0 12px; font-weight: 600;
+  background: color-mix(in srgb, var(--bad) 8%, transparent);
+}
