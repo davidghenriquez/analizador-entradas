@@ -62,6 +62,31 @@
     } catch (err) { info('dataInfo', 'Error: ' + err.message, true); }
   });
 
+  let marketIndex = null;
+  fetch('data/index.json', { cache: 'no-cache' })
+    .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+    .then(idx => {
+      marketIndex = idx;
+      const groups = {};
+      for (const s of idx.symbols) (groups[s.group] ||= []).push(s);
+      $('mkSymbol').innerHTML = Object.entries(groups).map(([g, list]) =>
+        `<optgroup label="${g}">${list.map(s => `<option value="${s.id}">${s.name}</option>`).join('')}</optgroup>`).join('');
+      $('marketHint').textContent = `Velas de ${idx.source}, actualizadas solas cada día laborable. Última actualización: ${fmtDate(Date.parse(idx.updated))} UTC.`;
+      $('mkLoad').disabled = false;
+    })
+    .catch(() => { $('marketHint').textContent = 'No se han encontrado datos de mercado. Usa un CSV o Twelve Data.'; });
+
+  $('mkLoad').addEventListener('click', async () => {
+    const s = marketIndex.symbols.find(x => x.id === $('mkSymbol').value);
+    const iv = $('mkInterval').value;
+    info('dataInfo', 'Cargando…');
+    try {
+      const res = await fetch(`data/${s.id}_${iv}.csv?u=${encodeURIComponent(marketIndex.updated)}`);
+      if (!res.ok) throw new Error(`No hay datos de ${s.name} en ${iv}.`);
+      setData(Data.parseCSV(await res.text()), `${s.name} ${$('mkInterval').selectedOptions[0].text}`);
+    } catch (err) { info('dataInfo', err.message, true); }
+  });
+
   $('demoLoad').addEventListener('click', () => setData(Data.synthetic(), 'Ejemplo sintético'));
 
   // ---------- Backtest ----------
@@ -99,6 +124,8 @@
 
   function renderAll() {
     $('results').classList.remove('hidden');
+    // Arranca justo por encima del acierto mínimo para no perder
+    $('thr').value = Math.min(0.8, Math.ceil((breakEven(result.params) + 0.03) * 100) / 100);
     renderResults();
     renderCalibration();
     renderWeights();
@@ -115,6 +142,7 @@
     const m = Backtest.metrics(trades);
     const base = Backtest.baseline(result);
     const be = breakEven(p);
+    $('thrHint').textContent = `Solo entra cuando el modelo da al menos esta probabilidad. Por encima de ${pct(be)} (acierto mínimo para no perder con TP ${p.tp} y SL ${p.sl} ATR) el modelo espera ganar dinero con la entrada.`;
 
     const cls = (v, ref) => !Number.isFinite(v) ? '' : v > ref ? 'good' : 'bad';
     $('stats').innerHTML = [
@@ -142,7 +170,8 @@
 
   function renderThresholdTable(current, base) {
     const rows = [];
-    for (let t = 0.45; t <= 0.751; t += 0.025) {
+    const from = Math.max(0.2, Math.floor((breakEven(result.params) - 0.1) * 40) / 40);
+    for (let t = from; t <= from + 0.351; t += 0.025) {
       const m = Backtest.metrics(Backtest.selectTrades(result, t));
       const isCur = Math.abs(t - current) < 0.0125;
       rows.push(`<tr class="${isCur ? 'current' : ''}"><td>${Math.round(t * 1000) / 10}%</td><td>${m.n}</td>

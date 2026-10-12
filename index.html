@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Analizador de Entradas</title>
   <meta name="description" content="Aprende patrones en datos de Forex e índices, estima la probabilidad de cada entrada y la valida con backtesting walk-forward.">
-  <link rel="stylesheet" href="styles.css?v=1">
+  <link rel="stylesheet" href="styles.css?v=3">
 </head>
 <body>
 <header>
@@ -17,12 +17,28 @@
   <section class="card">
     <h2>1. Datos</h2>
     <div class="tabs" role="tablist">
-      <button class="tab active" data-tab="csv">Archivo CSV</button>
+      <button class="tab active" data-tab="market">Mercado</button>
+      <button class="tab" data-tab="csv">Archivo CSV</button>
       <button class="tab" data-tab="api">Twelve Data</button>
       <button class="tab" data-tab="demo">Ejemplo</button>
     </div>
 
-    <div class="pane" data-pane="csv">
+    <div class="pane" data-pane="market">
+      <p class="hint" id="marketHint">Velas de Yahoo Finance que se actualizan solas cada día laborable.</p>
+      <div class="grid">
+        <label>Mercado <select id="mkSymbol"></select></label>
+        <label>Temporalidad
+          <select id="mkInterval">
+            <option value="1h">1 hora</option>
+            <option value="4h">4 horas</option>
+            <option value="1d">Diario</option>
+          </select>
+        </label>
+      </div>
+      <button id="mkLoad" class="secondary" disabled>Cargar velas</button>
+    </div>
+
+    <div class="pane hidden" data-pane="csv">
       <p class="hint">Exporta las velas desde MetaTrader (Centro de históricos, Exportar), TradingView (Exportar datos del gráfico) o cualquier CSV con columnas fecha, apertura, máximo, mínimo y cierre.</p>
       <input type="file" id="csvFile" accept=".csv,.txt">
     </div>
@@ -71,9 +87,10 @@
   <section class="card hidden" id="results">
     <h2>3. Resultados del backtest</h2>
     <label class="thr">Umbral de probabilidad: <strong id="thrVal">55%</strong>
-      <input id="thr" type="range" min="0.40" max="0.80" step="0.01" value="0.55">
+      <input id="thr" type="range" min="0.20" max="0.80" step="0.01" value="0.55">
     </label>
 
+    <p class="hint" id="thrHint"></p>
     <div class="stats" id="stats"></div>
     <p class="hint" id="verdict"></p>
 
@@ -104,10 +121,10 @@
   <p>Herramienta educativa de análisis. No es asesoramiento financiero ni una recomendación de inversión. Los resultados pasados no garantizan resultados futuros y el trading con apalancamiento puede hacerte perder más de lo invertido.</p>
 </footer>
 
-<script src="js/indicators.js?v=1"></script>
-<script src="js/model.js?v=1"></script>
-<script src="js/backtest.js?v=1"></script>
-<script src="js/data.js?v=1"></script>
-<script src="js/app.js?v=1"></script>
+<script src="js/indicators.js?v=3"></script>
+<script src="js/model.js?v=3"></script>
+<script src="js/backtest.js?v=3"></script>
+<script src="js/data.js?v=3"></script>
+<script src="js/app.js?v=3"></script>
 </body>
 </html>
