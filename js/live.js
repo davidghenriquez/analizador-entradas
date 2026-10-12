@@ -7,7 +7,7 @@
   const signed = v => (v >= 0 ? '+' : '') + v.toFixed(2);
   const fmt = t => new Date(t).toISOString().slice(0, 16).replace('T', ' ');
   const models = {};
-  let timer = null, current = null, lastSeen = null, lastAlerted = null;
+  let timer = null, current = null, lastSeen = null, lastAlerted = null, lastSignal = null;
 
   async function loadModels(interval) {
     if (!models[interval]) {
@@ -41,7 +41,7 @@
       if (!s) throw new Error('No hay velas suficientes para calcular la señal.');
       const isNew = lastSeen !== null && s.t !== lastSeen;
       lastSeen = s.t;
-      render(market, interval, s, set);
+      render(market, interval, s, set, bars);
       if (s.best && s.t !== lastAlerted && (isNew || lastAlerted === null)) {
         lastAlerted = s.t;
         notify(market, interval, s);
@@ -73,7 +73,8 @@
     status(`Actualizado a las ${new Date().toLocaleTimeString()}. Próxima comprobación hacia las ${fmt(next)} UTC, se actualiza sola${interval === '1d' ? ' (las velas diarias cierran al terminar la sesión de cada mercado)' : ''}.`);
   }
 
-  function render(market, interval, s, set) {
+  function render(market, interval, s, set, bars) {
+    lastSignal = s;
     const d = Signals.digits(s.close);
     const o = s.best;
     const reco = o
@@ -90,7 +91,7 @@
       : `<div class="reco"><div class="title">Sin entrada en esta vela</div>
           <p class="hint">Ninguna salida con ventaja en el backtest llega a la probabilidad mínima. La tabla muestra lo que calcula el modelo para cada opción.</p></div>`;
 
-    const rows = s.options.map(x => `<tr class="${x === o ? 'best' : ''}">
+    const rows = s.options.map((x, k) => `<tr data-k="${k}" class="${x === o ? 'best' : ''}">
       <td>${x.dir > 0 ? 'Compra' : 'Venta'}</td><td>${x.tp} ATR</td>
       <td class="${x.p >= x.minProb ? 'good' : ''}">${pct(x.p)}</td><td>${pct(x.minProb)}</td><td>${signed(x.ev)}</td>
       <td>${x.stop.toFixed(d)}</td><td>${x.target.toFixed(d)}</td>
@@ -99,11 +100,67 @@
 
     $('liveBody').innerHTML = `<p class="hint">${market.name} ${interval} · última vela cerrada ${fmt(s.t)} UTC · cierre ${s.close.toFixed(d)} · ATR ${s.atr.toFixed(d)}</p>
       ${reco}
+      <div class="chart-legend" id="chartLegend"></div>`;
+
+    $('liveTable').innerHTML = `<p class="hint">Pulsa una fila para ver esa posición en el gráfico.</p>
       <div class="table-wrap"><table>
         <tr><th>Dirección</th><th>Take profit</th><th>Probabilidad</th><th>Mínima</th><th>R esperado</th><th>Stop loss</th><th>Objetivo</th><th>Backtest</th><th>Ventaja</th></tr>
         ${rows}
       </table></div>
       <p class="hint">Modelos entrenados el ${fmt(Date.parse(set.updated))} UTC. Cálculo estadístico con datos pasados, no es una recomendación de inversión.</p>`;
+
+    $('liveTable').querySelectorAll('tr[data-k]').forEach(tr =>
+      tr.addEventListener('click', () => showPosition(s.options[+tr.dataset.k], d)));
+    drawChart(bars, d);
+    // Por defecto la posición recomendada; si no hay, la opción con mejor resultado esperado
+    showPosition(o || s.options[0], d);
+  }
+
+  // ---------- Gráfico de velas ----------
+  let chart = null, series = null, lines = [];
+
+  function cssVar(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+  function drawChart(bars, d) {
+    const el = $('liveChart');
+    if (typeof LightweightCharts === 'undefined') { el.classList.add('hidden'); return; }
+    el.classList.remove('hidden');
+    if (!chart) {
+      chart = LightweightCharts.createChart(el, {
+        autoSize: true,
+        layout: { background: { color: cssVar('--card') }, textColor: cssVar('--muted') },
+        grid: { vertLines: { color: cssVar('--grid') }, horzLines: { color: cssVar('--grid') } },
+        rightPriceScale: { borderColor: cssVar('--border') },
+        timeScale: { borderColor: cssVar('--border'), timeVisible: true, secondsVisible: false, rightOffset: 8 },
+        crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+      });
+      series = chart.addCandlestickSeries({
+        upColor: '#16a34a', downColor: '#dc2626', borderVisible: false,
+        wickUpColor: '#16a34a', wickDownColor: '#dc2626',
+      });
+    }
+    series.applyOptions({ priceFormat: { type: 'price', precision: d, minMove: 1 / 10 ** d } });
+    series.setData(bars.map(b => ({ time: Math.floor(b.t / 1000), open: b.o, high: b.h, low: b.l, close: b.c })));
+    const n = bars.length;
+    chart.timeScale().setVisibleLogicalRange({ from: Math.max(0, n - 120), to: n + 8 });
+  }
+
+  function showPosition(x, d) {
+    $('liveTable').querySelectorAll('tr[data-k]').forEach(tr => tr.classList.toggle('selected', lastSignal.options[+tr.dataset.k] === x));
+    const side = x.dir > 0 ? 'Compra' : 'Venta';
+    const recommended = x === lastSignal.best;
+    $('chartLegend').innerHTML = `<strong>${side} TP ${x.tp} ATR · ${pct(x.p)}${recommended ? '' : ' (no recomendada)'}</strong>
+      <span><i style="border-color:#2563eb"></i>Entrada ${x.entry.toFixed(d)}</span>
+      <span><i style="border-color:#dc2626"></i>Stop loss ${x.stop.toFixed(d)}</span>
+      <span><i style="border-color:#16a34a"></i>Take profit ${x.target.toFixed(d)}</span>`;
+    if (!series) return;
+    lines.forEach(l => series.removePriceLine(l));
+    const style = recommended ? LightweightCharts.LineStyle.Solid : LightweightCharts.LineStyle.Dashed;
+    lines = [
+      series.createPriceLine({ price: x.entry, color: '#2563eb', lineWidth: 2, lineStyle: style, axisLabelVisible: true, title: 'Entrada' }),
+      series.createPriceLine({ price: x.stop, color: '#dc2626', lineWidth: 2, lineStyle: style, axisLabelVisible: true, title: 'SL' }),
+      series.createPriceLine({ price: x.target, color: '#16a34a', lineWidth: 2, lineStyle: style, axisLabelVisible: true, title: 'TP' }),
+    ];
   }
 
   function notify(market, interval, s) {

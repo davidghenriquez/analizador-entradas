@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Analizador de Entradas</title>
   <meta name="description" content="Aprende patrones en datos de Forex e índices, estima la probabilidad de cada entrada y la valida con backtesting walk-forward.">
-  <link rel="stylesheet" href="styles.css?v=4">
+  <link rel="stylesheet" href="styles.css?v=5">
 </head>
 <body>
 <header>
@@ -78,6 +78,8 @@
     </div>
     <p id="liveStatus" class="info"></p>
     <div id="liveBody"></div>
+    <div id="liveChart" class="hidden"></div>
+    <div id="liveTable"></div>
   </section>
 
   <section class="card">
@@ -132,12 +134,13 @@
   <p>Herramienta educativa de análisis. No es asesoramiento financiero ni una recomendación de inversión. Los resultados pasados no garantizan resultados futuros y el trading con apalancamiento puede hacerte perder más de lo invertido.</p>
 </footer>
 
-<script src="js/indicators.js?v=4"></script>
-<script src="js/model.js?v=4"></script>
-<script src="js/backtest.js?v=4"></script>
-<script src="js/data.js?v=4"></script>
-<script src="js/signals.js?v=4"></script>
-<script src="js/app.js?v=4"></script>
-<script src="js/live.js?v=4"></script>
+<script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+<script src="js/indicators.js?v=5"></script>
+<script src="js/model.js?v=5"></script>
+<script src="js/backtest.js?v=5"></script>
+<script src="js/data.js?v=5"></script>
+<script src="js/signals.js?v=5"></script>
+<script src="js/app.js?v=5"></script>
+<script src="js/live.js?v=5"></script>
 </body>
 </html>
